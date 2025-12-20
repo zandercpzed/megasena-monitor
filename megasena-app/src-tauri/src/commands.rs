@@ -1,5 +1,5 @@
 use crate::database::Database;
-use crate::models::{Aposta, ApostaResultado, Resultado};
+use crate::models::{Aposta, Resultado};
 use crate::api;
 use std::sync::Mutex;
 use tauri::State;
@@ -64,4 +64,30 @@ fn calcular_acertos(numeros_aposta: &[i32], numeros_sorteados: &[i32]) -> i32 {
         .iter()
         .filter(|n| numeros_sorteados.contains(n))
         .count() as i32
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_calcular_acertos_sena() {
+        let aposta = vec![1, 2, 3, 4, 5, 6];
+        let sorteio = vec![1, 2, 3, 4, 5, 6];
+        assert_eq!(calcular_acertos(&aposta, &sorteio), 6);
+    }
+
+    #[test]
+    fn test_calcular_acertos_quadra() {
+        let aposta = vec![1, 2, 3, 4, 5, 6];
+        let sorteio = vec![1, 2, 3, 4, 10, 11];
+        assert_eq!(calcular_acertos(&aposta, &sorteio), 4);
+    }
+
+    #[test]
+    fn test_calcular_acertos_zero() {
+        let aposta = vec![1, 2, 3, 4, 5, 6];
+        let sorteio = vec![10, 11, 12, 13, 14, 15];
+        assert_eq!(calcular_acertos(&aposta, &sorteio), 0);
+    }
 }

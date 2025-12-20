@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Toaster, toast } from 'react-hot-toast';
 import { FormCadastro } from './components/FormCadastro';
 import { ListaApostas } from './components/ListaApostas';
 import { listarApostas, verificarResultados } from './services/tauri';
@@ -52,15 +53,21 @@ function App() {
       }
 
       if (verificadas > 0) {
-        alert(`✓ ${verificadas} concurso(s) verificado(s) com sucesso!${erros > 0 ? `\n⚠️ ${erros} falharam` : ''}`);
+        toast.success(`${verificadas} concurso(s) verificado(s)!`, {
+          duration: 4000,
+          icon: '🎉',
+        });
+        if (erros > 0) {
+          toast.error(`${erros} concurso(s) falharam na conexão.`, { duration: 5000 });
+        }
         // Recarregar apostas para mostrar resultados atualizados
         await carregarApostas();
       } else {
-        alert('❌ Não foi possível verificar os resultados. Tente novamente.');
+        toast.error('Não foi possível verificar os resultados.', { icon: '❌' });
       }
     } catch (error) {
       console.error('Erro ao verificar resultados:', error);
-      alert('❌ Erro ao verificar resultados. Verifique sua conexão com a internet.');
+      toast.error('Erro na verificação. Verifique sua conexão.');
     } finally {
       setVerificando(false);
     }
@@ -118,6 +125,7 @@ function App() {
           )}
         </section>
       </div>
+      <Toaster position="bottom-right" />
     </div>
   );
 }

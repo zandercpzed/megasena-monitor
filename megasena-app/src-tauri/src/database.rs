@@ -234,3 +234,50 @@ impl Database {
         Ok(results)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn setup_test_db() -> Database {
+        let db = Database::new(PathBuf::from(":memory:")).unwrap();
+        db.init().unwrap();
+        db
+    }
+
+    #[test]
+    fn test_db_adicionar_listar_apostas() {
+        let db = setup_test_db();
+        let numeros = vec![1, 2, 3, 4, 5, 6];
+        
+        let aposta = db.adicionar_aposta(numeros.clone(), 2650, 1).unwrap();
+        assert_eq!(aposta.concurso_inicial, 2650);
+        assert_eq!(aposta.numeros, numeros);
+        
+        let apostas = db.listar_apostas().unwrap();
+        assert_eq!(apostas.len(), 1);
+        assert_eq!(apostas[0].id, aposta.id);
+    }
+
+    #[test]
+    fn test_db_processar_acertos() {
+        let db = setup_test_db();
+        let aposta_numeros = vec![1, 2, 3, 4, 5, 6];
+        db.adicionar_aposta(aposta_numeros, 2650, 2).unwrap(); // Concursos 2650 e 2651
+        
+        let sorteio_2650 = vec![1, 2, 10, 11, 12, 13]; // 2 acertos
+        let res_2650 = crate::models::Resultado {
+            concurso: 2650,
+            numeros_sorteados: sorteio_2650.clone(),
+            data_sorteio: "2023-11-01".to_string(),
+            acumulado: false,
+        };
+        db.salvar_resultado(&res_2650).unwrap();
+        db.processar_acertos_concurso(2650, &sorteio_2650).unwrap();
+        
+        let acertos_map = db.obter_acertos_aposta(1).unwrap();
+        assert_eq!(acertos_map.get(&2650), Some(&2));
+        assert_eq!(acertos_map.get(&2651), None);
+    }
+}
