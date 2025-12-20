@@ -1,3 +1,21 @@
+/*
+ * MegaSena Monitor - Minimalist desktop application for managing bets.
+ * Copyright (C) 2025 Zander Cattapreta
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 interface NumeroEsferaProps {
   numero: number;
   selecionado?: boolean;
@@ -19,24 +37,21 @@ export function NumeroEsfera({
     large: 'w-12 h-12 text-xl'
   };
 
-  const baseClasses = 'rounded-full font-bold flex items-center justify-center transition-all duration-200';
-  
-  const stateClasses = selecionado || acertou
-    ? 'bg-green-sphere text-white shadow-lg hover:bg-green-dark'
-    : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-green-dark';
-  
-  const glowClasses = acertou ? 'ring-4 ring-green-300 shadow-green-sphere/50' : '';
-  
-  const cursorClass = onClick ? 'cursor-pointer hover:scale-110' : '';
-
   return (
-    <button
-      type="button"
+    <div
       onClick={onClick}
-      disabled={!onClick}
-      className={`${baseClasses} ${sizeClasses[tamanho]} ${stateClasses} ${glowClasses} ${cursorClass}`}
+      className={`
+        ${sizeClasses[tamanho]} rounded-full font-bold flex items-center justify-center
+        transition-all duration-300 select-none
+        ${onClick ? 'cursor-pointer' : ''}
+        ${acertou 
+          ? 'bg-green-sphere text-white winning-sphere scale-110' 
+          : selecionado 
+            ? 'bg-green-sphere text-white scale-105' 
+            : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-green-sphere'}
+      `}
     >
       {numero.toString().padStart(2, '0')}
-    </button>
+    </div>
   );
 }

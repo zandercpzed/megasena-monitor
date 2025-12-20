@@ -1,4 +1,22 @@
-@tailwind base;
+/*
+ * MegaSena Monitor - Minimalist desktop application for managing bets.
+ * Copyright (C) 2025 Zander Cattapreta
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+@import "tailwindcss";
 @tailwind components;
 @tailwind utilities;
 
@@ -37,14 +55,33 @@
   transition: all 0.2s ease;
 }
 
+/* Animação de Brilho para Acertos */
+@keyframes winning-glow {
+  0% { box-shadow: 0 0 5px rgba(0, 168, 89, 0.4); }
+  50% { box-shadow: 0 0 15px rgba(0, 168, 89, 0.8), 0 0 30px rgba(0, 168, 89, 0.4); }
+  100% { box-shadow: 0 0 5px rgba(0, 168, 89, 0.4); }
+}
+
+.winning-sphere {
+  animation: winning-glow 2s infinite ease-in-out;
+  border: 2px solid white;
+}
+
+/* Glassmorphism for cards */
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(229, 231, 235, 0.5);
+}
+
 .fade-in {
-  animation: fadeIn 0.3s ease-in;
+  animation: fadeIn 0.4s ease-out forwards;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
