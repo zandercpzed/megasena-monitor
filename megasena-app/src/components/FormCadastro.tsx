@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NumeroEsfera } from './NumeroEsfera';
 import { GridNumeros } from './GridNumeros';
-import { adicionarAposta } from '../services/tauri';
+import { adicionarAposta, obterUltimoConcurso } from '../services/tauri';
 
 interface FormCadastroProps {
   onApostaAdicionada: () => void;
@@ -30,6 +30,19 @@ export function FormCadastro({ onApostaAdicionada }: FormCadastroProps) {
   const [selecionados, setSelecionados] = useState<number[]>([]);
   const [teimosinha, setTeimosinha] = useState(1);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const carregarUltimo = async () => {
+      try {
+        const ultimo = await obterUltimoConcurso();
+        // Sugerir o último sorteado como padrão (ou o próximo se preferir, mas o último é melhor para conferência)
+        setConcurso(ultimo.toString());
+      } catch (error) {
+        console.warn('Falha ao obter último concurso:', error);
+      }
+    };
+    carregarUltimo();
+  }, []);
 
   const isValido = selecionados.length >= 6 && selecionados.length <= 15 && concurso !== '';
 

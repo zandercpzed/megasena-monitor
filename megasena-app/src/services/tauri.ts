@@ -55,3 +55,7 @@ export async function carregarUltimosResultados(
     quantidade,
   });
 }
+
+export async function obterUltimoConcurso(): Promise<number> {
+  return await invoke('obter_ultimo_concurso');
+}

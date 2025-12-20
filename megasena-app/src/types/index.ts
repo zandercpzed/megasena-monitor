@@ -26,7 +26,7 @@ export interface Aposta {
   dataCriacao: string;
   ativa: boolean;
   acertos: { [concurso: number]: number };
-  resultados_concursos: { [concurso: number]: number[] };
+  resultadosConcursos: { [concurso: number]: number[] };
 }
 
 export interface Resultado {

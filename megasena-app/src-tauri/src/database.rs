@@ -88,7 +88,7 @@ impl Database {
         let aposta = stmt.query_row(params![id], |row| {
             let id: i64 = row.get(0)?;
             let numeros_str: String = row.get(1)?;
-            let numeros: Vec<i32> = serde_json::from_str(&numeros_str).unwrap();
+            let numeros: Vec<i32> = serde_json::from_str(&numeros_str).map_err(|e| rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e)))?;
 
             // Buscar resultados/acertos
             let acertos = self.obter_acertos_aposta(id).unwrap_or_default();
@@ -129,7 +129,7 @@ impl Database {
             .query_map([], |row| {
                 let id: i64 = row.get(0)?;
                 let numeros_str: String = row.get(1)?;
-                let numeros: Vec<i32> = serde_json::from_str(&numeros_str).unwrap();
+                let numeros: Vec<i32> = serde_json::from_str(&numeros_str).map_err(|e| rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e)))?;
 
                 // Buscar resultados/acertos
                 let acertos = self.obter_acertos_aposta(id).unwrap_or_default();

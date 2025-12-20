@@ -99,7 +99,7 @@ export function CardAposta({ aposta, onExcluida }: CardApostaProps) {
             <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Resultados</h4>
             {Array.from({ length: aposta.quantidadeConcursos }, (_, i) => aposta.concursoInicial + i).map(concurso => {
               const acertos = aposta.acertos?.[concurso];
-              const sorteados = aposta.resultados_concursos?.[concurso];
+              const sorteados = aposta.resultadosConcursos?.[concurso];
               
               return (
                 <div key={concurso} className="bg-gray-50 rounded p-3 border border-gray-100">

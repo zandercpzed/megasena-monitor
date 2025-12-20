@@ -33,6 +33,7 @@ pub fn run() {
             commands::excluir_aposta,
             commands::verificar_resultados,
             commands::carregar_ultimos_resultados,
+            commands::obter_ultimo_concurso,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

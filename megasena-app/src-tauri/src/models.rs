@@ -21,6 +21,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Aposta {
     pub id: i64,
     pub numeros: Vec<i32>,
@@ -33,6 +34,7 @@ pub struct Aposta {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Resultado {
     pub concurso: i32,
     pub numeros_sorteados: Vec<i32>,
@@ -41,6 +43,7 @@ pub struct Resultado {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ApostaResultado {
     pub aposta_id: i64,
     pub concurso: i32,

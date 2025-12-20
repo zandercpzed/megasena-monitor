@@ -20,7 +20,7 @@ import { useState, useEffect } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import { FormCadastro } from './components/FormCadastro';
 import { ListaApostas } from './components/ListaApostas';
-import { listarApostas, verificarResultados, carregarUltimosResultados } from './services/tauri';
+import { listarApostas, verificarResultados, carregarUltimosResultados, obterUltimoConcurso } from './services/tauri';
 import { Aposta } from './types';
 import './App.css';
 
@@ -36,7 +36,6 @@ function App() {
       setApostas(data);
     } catch (error) {
       console.error('Erro ao carregar apostas:', error);
-      // Se backend não estiver pronto, usar array vazio
       setApostas([]);
     } finally {
       setLoading(false);
@@ -44,14 +43,16 @@ function App() {
   };
 
   const handleVerificarResultados = async () => {
-    if (apostas.length === 0) return;
+    if (apostas.length === 0) {
+      toast.error('Nenhuma aposta cadastrada para verificar.', { icon: '⚠️' });
+      return;
+    }
 
     setVerificando(true);
     let verificadas = 0;
     let erros = 0;
 
     try {
-      // Pegar todos os concursos únicos das apostas
       const concursosUnicos = new Set<number>();
       apostas.forEach(aposta => {
         for (let i = 0; i < aposta.quantidadeConcursos; i++) {
@@ -59,7 +60,8 @@ function App() {
         }
       });
 
-      // Verificar cada concurso
+      toast.loading(`Conferindo ${concursosUnicos.size} concurso(s)...`, { id: 'verificando' });
+
       for (const concurso of concursosUnicos) {
         try {
           await verificarResultados(concurso);
@@ -70,22 +72,23 @@ function App() {
         }
       }
 
+      toast.dismiss('verificando');
+
       if (verificadas > 0) {
-        toast.success(`${verificadas} concurso(s) verificado(s)!`, {
+        toast.success(`${verificadas} concurso(s) conferido(s)!`, {
           duration: 4000,
           icon: '🎉',
         });
         if (erros > 0) {
-          toast.error(`${erros} concurso(s) falharam na conexão.`, { duration: 5000 });
+          toast.error(`${erros} concurso(s) indisponíveis ou falharam.`, { duration: 5000 });
         }
-        // Recarregar apostas para mostrar resultados atualizados
         await carregarApostas();
       } else {
-        toast.error('Não foi possível verificar os resultados.', { icon: '❌' });
+        toast.error('Não foi possível obter novos resultados. Tente mais tarde.', { icon: '❌' });
       }
     } catch (error) {
       console.error('Erro ao verificar resultados:', error);
-      toast.error('Erro na verificação. Verifique sua conexão.');
+      toast.error('Ocorreu um erro inesperado na conferência.');
     } finally {
       setVerificando(false);
     }
@@ -93,23 +96,21 @@ function App() {
 
   useEffect(() => {
     const inicializar = async () => {
-      // Carregar apostas existentes
+      // 1. Carregar lista de apostas local
       await carregarApostas();
 
-      // Pré-carregar últimos 15 resultados em background
+      // 2. Carregar últimos resultados reais da Caixa
       try {
-        // Assumindo que o último concurso é +/- 2950 (você pode ajustar esse número)
-        // Uma abordagem melhor seria buscar o concurso mais recente primeiro
-        const concursoAtual = 2950; // TODO: Buscar concurso atual da API
-        console.log('Pré-carregando últimos 15 resultados...');
-        await carregarUltimosResultados(concursoAtual, 15);
-        console.log('Resultados pré-carregados com sucesso');
+        console.log('Buscando número do último concurso...');
+        const ultimoConcurso = await obterUltimoConcurso();
         
-        // Recarregar apostas para mostrar resultados atualizados
+        console.log(`Último concurso: ${ultimoConcurso}. Pré-carregando 15 últimos...`);
+        await carregarUltimosResultados(ultimoConcurso, 15);
+        
+        // Atualizar lista para mostrar acertos carregados
         await carregarApostas();
       } catch (error) {
-        console.error('Erro ao pré-carregar resultados:', error);
-        // Falha silenciosa - não atrapalha o uso do app
+        console.warn('Falha na inicialização dinâmica dos resultados:', error);
       }
     };
 

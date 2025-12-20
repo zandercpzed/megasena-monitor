@@ -86,6 +86,31 @@ fn fetch_google_search(concurso: i32) -> Result<Resultado, String> {
     Err(format!("Fallback para concurso {} não disponível no momento.", concurso))
 }
 
+/// Busca o número do último concurso realizado na API da Caixa
+pub fn obter_ultimo_concurso_numero() -> Result<i32, String> {
+    let url = "https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/";
+
+    let client = Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| format!("Erro ao criar cliente HTTP: {}", e))?;
+
+    let response = client
+        .get(url)
+        .send()
+        .map_err(|e| format!("Erro ao fazer requisição: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("API retornou status: {}", response.status()));
+    }
+
+    let data: CaixaApiResponse = response
+        .json()
+        .map_err(|e| format!("Erro ao parsear JSON: {}", e))?;
+
+    Ok(data.numero)
+}
+
 /// Função principal de verificação com fallback
 pub fn verificar_resultado(concurso: i32) -> Result<Resultado, String> {
     // Tentar API Caixa

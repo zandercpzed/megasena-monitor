@@ -62,7 +62,7 @@ pub fn excluir_aposta(db: State<'_, Mutex<Database>>, id: i64) -> Result<(), Str
 
 
 #[tauri::command]
-pub async fn verificar_resultados(
+pub fn verificar_resultados(
     db: State<'_, Mutex<Database>>,
     concurso: i32,
 ) -> Result<Resultado, String> {
@@ -78,7 +78,7 @@ pub async fn verificar_resultados(
 }
 
 #[tauri::command]
-pub async fn carregar_ultimos_resultados(
+pub fn carregar_ultimos_resultados(
     db: State<'_, Mutex<Database>>,
     concurso_final: i32,
     quantidade: i32,
@@ -105,6 +105,11 @@ pub async fn carregar_ultimos_resultados(
     }
     
     Ok(resultados)
+}
+
+#[tauri::command]
+pub fn obter_ultimo_concurso() -> Result<i32, String> {
+    api::obter_ultimo_concurso_numero()
 }
 
 /// Calcular acertos entre números apostados e sorteados
