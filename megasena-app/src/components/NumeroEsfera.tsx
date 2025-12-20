@@ -45,10 +45,10 @@ export function NumeroEsfera({
         transition-all duration-300 select-none
         ${onClick ? 'cursor-pointer' : ''}
         ${acertou 
-          ? 'bg-green-sphere text-white winning-sphere scale-110' 
+          ? 'bg-green-sphere text-white winning-sphere scale-110 font-black' 
           : selecionado 
-            ? 'bg-green-sphere text-white scale-105' 
-            : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-green-sphere'}
+            ? 'bg-green-sphere text-white scale-105 border-transparent shadow-md font-bold' 
+            : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-green-sphere hover:text-green-sphere'}
       `}
     >
       {numero.toString().padStart(2, '0')}

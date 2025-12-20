@@ -17,8 +17,12 @@
  */
 
 @import "tailwindcss";
-@tailwind components;
-@tailwind utilities;
+
+@theme {
+  --color-green-sphere: #00A859;
+  --color-green-dark: #006B3C;
+  --color-green-light: #E8F5E9;
+}
 
 /* MegaSena Custom Styles */
 :root {

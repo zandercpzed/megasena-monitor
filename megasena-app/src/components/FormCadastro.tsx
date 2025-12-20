@@ -121,10 +121,10 @@ export function FormCadastro({ onApostaAdicionada }: FormCadastroProps) {
       <button
         type="submit"
         disabled={!isValido || loading}
-        className={`w-full py-3 rounded-lg font-bold text-white transition-all ${
+        className={`w-full py-3 rounded-lg font-bold text-white transition-all shadow-md active:scale-[0.98] ${
           isValido && !loading
-            ? 'bg-green-sphere hover:bg-green-dark shadow-lg hover:shadow-xl'
-            : 'bg-gray-300 cursor-not-allowed'
+            ? 'bg-green-sphere hover:bg-green-dark'
+            : 'bg-gray-400 opacity-60 cursor-not-allowed text-gray-100'
         }`}
       >
         {loading ? 'Adicionando...' : 'Adicionar Aposta'}
