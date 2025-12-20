@@ -10,6 +10,8 @@ pub struct Aposta {
     pub quantidade_concursos: i32,
     pub data_criacao: String,
     pub ativa: bool,
+    pub acertos: std::collections::HashMap<i32, i32>,
+    pub resultados_concursos: std::collections::HashMap<i32, Vec<i32>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -68,7 +68,7 @@ export function CardAposta({ aposta, onExcluida }: CardApostaProps) {
 
       {/* Detalhes Expandidos */}
       {expandido && (
-        <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+        <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
           <div className="text-sm text-gray-600">
             <p><strong>Criado em:</strong> {new Date(aposta.dataCriacao).toLocaleString('pt-BR')}</p>
             {aposta.quantidadeConcursos > 1 && (
@@ -76,9 +76,42 @@ export function CardAposta({ aposta, onExcluida }: CardApostaProps) {
             )}
           </div>
 
-          {/* TODO: Exibir resultados quando implementarmos verificação */}
-          <div className="text-sm text-gray-500 italic">
-            Clique em "Verificar Resultados" para ver os acertos
+          {/* Resultados por Concurso */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Resultados</h4>
+            {Array.from({ length: aposta.quantidadeConcursos }, (_, i) => aposta.concursoInicial + i).map(concurso => {
+              const acertos = aposta.acertos?.[concurso];
+              const sorteados = aposta.resultados_concursos?.[concurso];
+              
+              return (
+                <div key={concurso} className="bg-gray-50 rounded p-3 border border-gray-100">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-gray-700">Concurso {concurso}</span>
+                    {acertos !== undefined ? (
+                      <span className={`text-sm font-bold ${acertos >= 4 ? 'text-green-600' : 'text-gray-500'}`}>
+                        {acertos} acerto{acertos !== 1 ? 's' : ''}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">Pendente</span>
+                    )}
+                  </div>
+                  
+                  {sorteados && (
+                    <div className="flex flex-wrap gap-1">
+                      {sorteados.map(num => (
+                        <NumeroEsfera 
+                          key={num} 
+                          numero={num} 
+                          selecionado={aposta.numeros.includes(num)} 
+                          acertou={aposta.numeros.includes(num)}
+                          tamanho="small" 
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

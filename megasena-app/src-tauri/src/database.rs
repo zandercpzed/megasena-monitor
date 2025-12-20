@@ -68,16 +68,30 @@ impl Database {
         )?;
 
         let aposta = stmt.query_row(params![id], |row| {
+            let id: i64 = row.get(0)?;
             let numeros_str: String = row.get(1)?;
             let numeros: Vec<i32> = serde_json::from_str(&numeros_str).unwrap();
 
+            // Buscar resultados/acertos
+            let acertos = self.obter_acertos_aposta(id).unwrap_or_default();
+            
+            // Buscar os números sorteados de cada concurso verificado
+            let mut resultados_concursos = std::collections::HashMap::new();
+            for (&concurso, _) in &acertos {
+                if let Ok(Some(res)) = self.obter_resultado(concurso) {
+                    resultados_concursos.insert(concurso, res.numeros_sorteados);
+                }
+            }
+
             Ok(Aposta {
-                id: row.get(0)?,
+                id,
                 numeros,
                 concurso_inicial: row.get(2)?,
                 quantidade_concursos: row.get(3)?,
                 data_criacao: row.get(4)?,
                 ativa: row.get(5)?,
+                acertos,
+                resultados_concursos,
             })
         })?;
 
@@ -95,16 +109,30 @@ impl Database {
 
         let apostas = stmt
             .query_map([], |row| {
+                let id: i64 = row.get(0)?;
                 let numeros_str: String = row.get(1)?;
                 let numeros: Vec<i32> = serde_json::from_str(&numeros_str).unwrap();
 
+                // Buscar resultados/acertos
+                let acertos = self.obter_acertos_aposta(id).unwrap_or_default();
+                
+                // Buscar os números sorteados de cada concurso verificado
+                let mut resultados_concursos = std::collections::HashMap::new();
+                for (&concurso, _) in &acertos {
+                    if let Ok(Some(res)) = self.obter_resultado(concurso) {
+                        resultados_concursos.insert(concurso, res.numeros_sorteados);
+                    }
+                }
+
                 Ok(Aposta {
-                    id: row.get(0)?,
+                    id,
                     numeros,
                     concurso_inicial: row.get(2)?,
                     quantidade_concursos: row.get(3)?,
                     data_criacao: row.get(4)?,
                     ativa: row.get(5)?,
+                    acertos,
+                    resultados_concursos,
                 })
             })?
             .collect::<Result<Vec<_>>>()?;
@@ -160,5 +188,49 @@ impl Database {
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e),
         }
+    }
+
+    pub fn processar_acertos_concurso(&self, concurso: i32, numeros_sorteados: &[i32]) -> Result<()> {
+        // Buscar todas as apostas ativas que incluem este concurso
+        let mut stmt = self.conn.prepare(
+            "SELECT id, numeros, concurso_inicial, quantidade_concursos 
+             FROM apostas 
+             WHERE ativa = 1 
+             AND ?1 >= concurso_inicial 
+             AND ?1 < (concurso_inicial + quantidade_concursos)"
+        )?;
+
+        let apostas_afetadas = stmt.query_map(params![concurso], |row| {
+            let id: i64 = row.get(0)?;
+            let numeros_str: String = row.get(1)?;
+            let numeros: Vec<i32> = serde_json::from_str(&numeros_str).unwrap();
+            Ok((id, numeros))
+        })?.collect::<Result<Vec<(i64, Vec<i32>)>>>()?;
+
+        for (id, numeros) in apostas_afetadas {
+            // Calcular acertos
+            let acertos = numeros.iter().filter(|n| numeros_sorteados.contains(n)).count() as i32;
+            
+            // Inserir ou substituir na tabela de resultados de apostas
+            self.conn.execute(
+                "INSERT OR REPLACE INTO apostas_resultados (aposta_id, concurso, acertos) 
+                 VALUES (?1, ?2, ?3)",
+                params![id, concurso, acertos],
+            )?;
+        }
+
+        Ok(())
+    }
+
+    pub fn obter_acertos_aposta(&self, aposta_id: i64) -> Result<std::collections::HashMap<i32, i32>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT concurso, acertos FROM apostas_resultados WHERE aposta_id = ?1"
+        )?;
+
+        let results = stmt.query_map(params![aposta_id], |row| {
+            Ok((row.get::<_, i32>(0)?, row.get::<_, i32>(1)?))
+        })?.collect::<Result<std::collections::HashMap<i32, i32>>>()?;
+
+        Ok(results)
     }
 }

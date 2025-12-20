@@ -1,39 +1,47 @@
 # MegaSena Monitor
 
-Aplicativo desktop para gerenciar apostas da Mega-Sena.
+Aplicativo desktop minimalista para gerenciar apostas da Mega-Sena com verificação automática de resultados.
 
-## 🚧 Status do Projeto
+## 🚀 Quick Start
 
-**Em desenvolvimento inicial** - Projeto recém-criado com Tauri + React + TypeScript.
+```bash
+# Clone o repositório
+git clone https://github.com/zandercpzed/megasena-monitor.git
+cd megasena-monitor/megasena-app
 
-## 📋 Especificações
+# Instale dependências
+npm install
 
-Ver documentação completa em [`docs/prompt_app.md`](docs/prompt_app.md).
+# Execute em modo desenvolvimento
+npm run tauri dev
+```
 
-### Stack Tecnológica
+## ✨ Funcionalidades
 
-- **Frontend**: React 18 + TypeScript + Tailwind CSS
-- **Backend**: Tauri (Rust)
-- **Database**: SQLite
-- **Target**: macOS (inicial), multiplataforma (futuro)
+- ✅ **Cadastro de Apostas**: Selecione 6-15 números em grid visual
+- ✅ **Teimosinha**: Suporte para 1-12 concursos consecutivos
+- ✅ **Verificação Automática**: Busca resultados da API oficial da Caixa
+- ✅ **100% Offline**: SQLite local para armazenamento
+- ✅ **Design Minimalista**: Interface limpa com esferas verdes
 
-### Funcionalidades Principais
+## 🛠️ Stack Tecnológica
 
-- ✅ Tela única minimalista
-- ✅ Números em círculos verdes (esferas de sorteio)
-- ✅ Até 10 apostas simultâneas
-- ✅ Suporte a teimosinha (2-12 concursos)
-- ✅ Verificação manual de resultados
-- ✅ 100% offline após instalação
+- **Frontend**: React 19 + TypeScript + Tailwind CSS v4
+- **Backend**: Tauri 2.0 (Rust)
+- **Database**: SQLite (bundled)
+- **Build**: Vite 7.0
 
-## 📦 Próximos Passos
+## 📦 Build para Produção
 
-1. Inicializar projeto Tauri
-2. Configurar Tailwind CSS
-3. Implementar componentes React
-4. Implementar backend Rust
-5. Integrar API Caixa
+```bash
+# macOS
+npm run tauri build
+# Output: src-tauri/target/release/bundle/macos/MegaSena.app
 
-## 📄 Licença
+# Windows/Linux
+# Configurar GitHub Actions CI/CD (futuro)
+```
+
+## 📝 Licença
 
 GNU GPL v3.0

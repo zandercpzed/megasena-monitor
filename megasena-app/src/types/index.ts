@@ -7,6 +7,8 @@ export interface Aposta {
   quantidadeConcursos: number;
   dataCriacao: string;
   ativa: boolean;
+  acertos: { [concurso: number]: number };
+  resultados_concursos: { [concurso: number]: number[] };
 }
 
 export interface Resultado {

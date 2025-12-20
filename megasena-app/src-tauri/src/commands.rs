@@ -50,13 +50,10 @@ pub async fn verificar_resultados(
     // Buscar resultado da API
     let resultado = api::verificar_resultado(concurso)?;
     
-    // Salvar no banco de dados (em background)
-    let db_clone = db.inner().clone();
-    tokio::spawn(async move {
-        if let Ok(db) = db_clone.lock() {
-            let _ = db.salvar_resultado(&resultado);
-        }
-    });
+    // Salvar no banco de dados e processar acertos
+    let db = db.lock().map_err(|e| e.to_string())?;
+    db.salvar_resultado(&resultado).map_err(|e| e.to_string())?;
+    db.processar_acertos_concurso(concurso, &resultado.numeros_sorteados).map_err(|e| e.to_string())?;
     
     Ok(resultado)
 }
