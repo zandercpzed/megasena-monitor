@@ -20,7 +20,7 @@ import { useState, useEffect } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import { FormCadastro } from './components/FormCadastro';
 import { ListaApostas } from './components/ListaApostas';
-import { listarApostas, verificarResultados } from './services/tauri';
+import { listarApostas, verificarResultados, carregarUltimosResultados } from './services/tauri';
 import { Aposta } from './types';
 import './App.css';
 
@@ -92,7 +92,28 @@ function App() {
   };
 
   useEffect(() => {
-    carregarApostas();
+    const inicializar = async () => {
+      // Carregar apostas existentes
+      await carregarApostas();
+
+      // Pré-carregar últimos 15 resultados em background
+      try {
+        // Assumindo que o último concurso é +/- 2950 (você pode ajustar esse número)
+        // Uma abordagem melhor seria buscar o concurso mais recente primeiro
+        const concursoAtual = 2950; // TODO: Buscar concurso atual da API
+        console.log('Pré-carregando últimos 15 resultados...');
+        await carregarUltimosResultados(concursoAtual, 15);
+        console.log('Resultados pré-carregados com sucesso');
+        
+        // Recarregar apostas para mostrar resultados atualizados
+        await carregarApostas();
+      } catch (error) {
+        console.error('Erro ao pré-carregar resultados:', error);
+        // Falha silenciosa - não atrapalha o uso do app
+      }
+    };
+
+    inicializar();
   }, []);
 
   return (

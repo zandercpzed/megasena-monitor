@@ -60,6 +60,7 @@ pub fn excluir_aposta(db: State<'_, Mutex<Database>>, id: i64) -> Result<(), Str
     db.excluir_aposta(id).map_err(|e| e.to_string())
 }
 
+
 #[tauri::command]
 pub async fn verificar_resultados(
     db: State<'_, Mutex<Database>>,
@@ -74,6 +75,36 @@ pub async fn verificar_resultados(
     db.processar_acertos_concurso(concurso, &resultado.numeros_sorteados).map_err(|e| e.to_string())?;
     
     Ok(resultado)
+}
+
+#[tauri::command]
+pub async fn carregar_ultimos_resultados(
+    db: State<'_, Mutex<Database>>,
+    concurso_final: i32,
+    quantidade: i32,
+) -> Result<Vec<Resultado>, String> {
+    let mut resultados = Vec::new();
+    let concurso_inicial = concurso_final - quantidade + 1;
+    
+    for concurso in concurso_inicial..=concurso_final {
+        match api::verificar_resultado(concurso) {
+            Ok(resultado) => {
+                // Salvar no banco
+                let db_lock = db.lock().map_err(|e| e.to_string())?;
+                db_lock.salvar_resultado(&resultado).map_err(|e| e.to_string())?;
+                db_lock.processar_acertos_concurso(concurso, &resultado.numeros_sorteados).map_err(|e| e.to_string())?;
+                drop(db_lock);
+                
+                resultados.push(resultado);
+            }
+            Err(e) => {
+                eprintln!("Erro ao carregar concurso {}: {}", concurso, e);
+                // Continuar mesmo com erro
+            }
+        }
+    }
+    
+    Ok(resultados)
 }
 
 /// Calcular acertos entre números apostados e sorteados
