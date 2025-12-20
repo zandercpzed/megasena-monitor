@@ -119,4 +119,46 @@ impl Database {
         )?;
         Ok(())
     }
+
+    pub fn salvar_resultado(&self, resultado: &crate::models::Resultado) -> Result<()> {
+        let numeros_json = serde_json::to_string(&resultado.numeros_sorteados).unwrap();
+        
+        self.conn.execute(
+            "INSERT OR REPLACE INTO resultados (concurso, numeros_sorteados, data_sorteio, acumulado)
+             VALUES (?1, ?2, ?3, ?4)",
+            params![
+                resultado.concurso,
+                numeros_json,
+                resultado.data_sorteio,
+                resultado.acumulado
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn obter_resultado(&self, concurso: i32) -> Result<Option<crate::models::Resultado>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT concurso, numeros_sorteados, data_sorteio, acumulado
+             FROM resultados
+             WHERE concurso = ?1"
+        )?;
+
+        let resultado = stmt.query_row(params![concurso], |row| {
+            let numeros_str: String = row.get(1)?;
+            let numeros_sorteados: Vec<i32> = serde_json::from_str(&numeros_str).unwrap();
+
+            Ok(crate::models::Resultado {
+                concurso: row.get(0)?,
+                numeros_sorteados,
+                data_sorteio: row.get(2)?,
+                acumulado: row.get(3)?,
+            })
+        });
+
+        match resultado {
+            Ok(r) => Ok(Some(r)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
 }

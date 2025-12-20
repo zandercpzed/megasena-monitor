@@ -1,5 +1,6 @@
 // Lib.rs - Main library file for Tauri app
 
+mod api;
 mod commands;
 mod database;
 mod models;
@@ -30,6 +31,7 @@ pub fn run() {
             commands::adicionar_aposta,
             commands::listar_apostas,
             commands::excluir_aposta,
+            commands::verificar_resultados,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

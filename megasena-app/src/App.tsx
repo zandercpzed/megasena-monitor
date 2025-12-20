@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { FormCadastro } from './components/FormCadastro';
 import { ListaApostas } from './components/ListaApostas';
-import { listarApostas } from './services/tauri';
+import { listarApostas, verificarResultados } from './services/tauri';
 import { Aposta } from './types';
 import './App.css';
 
 function App() {
   const [apostas, setApostas] = useState<Aposta[]>([]);
   const [loading, setLoading] = useState(true);
+  const [verificando, setVerificando] = useState(false);
 
   const carregarApostas = async () => {
     setLoading(true);
@@ -17,9 +18,51 @@ function App() {
     } catch (error) {
       console.error('Erro ao carregar apostas:', error);
       // Se backend não estiver pronto, usar array vazio
-setApostas([]);
+      setApostas([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerificarResultados = async () => {
+    if (apostas.length === 0) return;
+
+    setVerificando(true);
+    let verificadas = 0;
+    let erros = 0;
+
+    try {
+      // Pegar todos os concursos únicos das apostas
+      const concursosUnicos = new Set<number>();
+      apostas.forEach(aposta => {
+        for (let i = 0; i < aposta.quantidadeConcursos; i++) {
+          concursosUnicos.add(aposta.concursoInicial + i);
+        }
+      });
+
+      // Verificar cada concurso
+      for (const concurso of concursosUnicos) {
+        try {
+          await verificarResultados(concurso);
+          verificadas++;
+        } catch (error) {
+          console.error(`Erro ao verificar concurso ${concurso}:`, error);
+          erros++;
+        }
+      }
+
+      if (verificadas > 0) {
+        alert(`✓ ${verificadas} concurso(s) verificado(s) com sucesso!${erros > 0 ? `\n⚠️ ${erros} falharam` : ''}`);
+        // Recarregar apostas para mostrar resultados atualizados
+        await carregarApostas();
+      } else {
+        alert('❌ Não foi possível verificar os resultados. Tente novamente.');
+      }
+    } catch (error) {
+      console.error('Erro ao verificar resultados:', error);
+      alert('❌ Erro ao verificar resultados. Verifique sua conexão com a internet.');
+    } finally {
+      setVerificando(false);
     }
   };
 
@@ -53,10 +96,15 @@ setApostas([]);
             </h2>
             {apostas.length > 0 && (
               <button
-                onClick={() => alert('Verificação de resultados será implementada em breve!')}
-                className="px-4 py-2 border-2 border-green-sphere text-green-sphere rounded-lg font-medium hover:bg-green-sphere hover:text-white transition-all"
+                onClick={handleVerificarResultados}
+                disabled={verificando}
+                className={`px-4 py-2 border-2 rounded-lg font-medium transition-all ${
+                  verificando
+                    ? 'border-gray-300 text-gray-400 cursor-not-allowed'
+                    : 'border-green-sphere text-green-sphere hover:bg-green-sphere hover:text-white'
+                }`}
               >
-                Verificar Resultados
+                {verificando ? 'Verificando...' : 'Verificar Resultados'}
               </button>
             )}
           </div>
