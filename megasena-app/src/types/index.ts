@@ -34,6 +34,8 @@ export interface Resultado {
   numerosSorteados: number[];
   dataSorteio: string;
   acumulado: boolean;
+  valorPremio?: number;
+  ganhadores?: number;
 }
 
 export interface ApostaResultado {

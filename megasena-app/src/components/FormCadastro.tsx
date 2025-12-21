@@ -17,6 +17,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import { NumeroEsfera } from './NumeroEsfera';
 import { GridNumeros } from './GridNumeros';
 import { adicionarAposta, obterUltimoConcurso } from '../services/tauri';
@@ -48,20 +49,30 @@ export function FormCadastro({ onApostaAdicionada }: FormCadastroProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[FORM] Tentando submeter aposta:', { selecionados, concurso, teimosinha });
     
-    if (!isValido) return;
+    if (!isValido) {
+      console.warn('[FORM] Validação falhou:', { 
+        numSelecionados: selecionados.length, 
+        concursoValido: concurso !== '' 
+      });
+      return;
+    }
 
     setLoading(true);
     try {
-      await adicionarAposta(selecionados, parseInt(concurso), teimosinha);
+      console.log('[FORM] Chamando adicionarAposta...');
+      const novaAposta = await adicionarAposta(selecionados, parseInt(concurso), teimosinha);
+      console.log('[FORM] Aposta adicionada com sucesso:', novaAposta);
       // Reset form
       setSelecionados([]);
-      setConcurso('');
+      setConcurso(concurso); // Manter o concurso para facilitar múltiplas apostas? Ou resetar? Original era resetar.
       setTeimosinha(1);
       onApostaAdicionada();
-    } catch (error) {
-      console.error('Erro ao adicionar aposta:', error);
-      alert('Erro ao adicionar aposta. Tente novamente.');
+      toast.success('Aposta cadastrada!');
+    } catch (error: any) {
+      console.error('[FORM] Erro ao adicionar aposta:', error);
+      alert(`Erro ao adicionar aposta: ${error?.message || error}`);
     } finally {
       setLoading(false);
     }
@@ -122,7 +133,7 @@ export function FormCadastro({ onApostaAdicionada }: FormCadastroProps) {
           onChange={(e) => setTeimosinha(parseInt(e.target.value))}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-sphere focus:border-transparent"
         >
-          {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
+          {[1, 2, 4, 8, 12].map(n => (
             <option key={n} value={n}>
               {n === 1 ? '1 concurso' : `${n} concursos (teimosinha)`}
             </option>

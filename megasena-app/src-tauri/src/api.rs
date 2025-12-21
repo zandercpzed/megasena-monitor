@@ -23,13 +23,25 @@ use reqwest::blocking::Client;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+struct Rateio {
+    #[serde(rename = "numeroDeGanhadores")]
+    ganhadores: i32,
+    #[serde(rename = "valorPremio")]
+    valor: Option<f64>,
+    #[serde(rename = "descricaoFaixa")]
+    descricao: String,
+}
+
+#[derive(Debug, Deserialize)]
 struct CaixaApiResponse {
     numero: i32,
     #[serde(rename = "dataApuracao")]
     data_apuracao: String,
-    #[serde(rename = "dezenas")]
+    #[serde(rename = "listaDezenas")]
     dezenas: Vec<String>,
     acumulado: bool,
+    #[serde(rename = "listaRateioPremio")]
+    lista_rateio: Vec<Rateio>,
 }
 
 /// Busca resultado da API oficial da Caixa
@@ -41,6 +53,7 @@ fn fetch_caixa_api(concurso: i32) -> Result<Resultado, String> {
 
     let client = Client::builder()
         .timeout(std::time::Duration::from_secs(10))
+        .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
         .build()
         .map_err(|e| format!("Erro ao criar cliente HTTP: {}", e))?;
 
@@ -71,11 +84,18 @@ fn fetch_caixa_api(concurso: i32) -> Result<Resultado, String> {
         ));
     }
 
+    // Extrair prêmio do rank 1 (Sena)
+    let sena_info = data.lista_rateio.iter().find(|r| r.descricao.to_lowercase().contains("6"));
+    let ganhadores = sena_info.map(|s| s.ganhadores);
+    let valor_premio = sena_info.and_then(|s| s.valor);
+
     Ok(Resultado {
         concurso: data.numero,
         numeros_sorteados,
         data_sorteio: data.data_apuracao,
         acumulado: data.acumulado,
+        valor_premio,
+        ganhadores,
     })
 }
 
@@ -92,6 +112,7 @@ pub fn obter_ultimo_concurso_numero() -> Result<i32, String> {
 
     let client = Client::builder()
         .timeout(std::time::Duration::from_secs(10))
+        .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
         .build()
         .map_err(|e| format!("Erro ao criar cliente HTTP: {}", e))?;
 

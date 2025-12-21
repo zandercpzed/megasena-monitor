@@ -40,6 +40,8 @@ pub struct Resultado {
     pub numeros_sorteados: Vec<i32>,
     pub data_sorteio: String,
     pub acumulado: bool,
+    pub valor_premio: Option<f64>,
+    pub ganhadores: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

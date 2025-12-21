@@ -30,6 +30,8 @@ pub struct Database {
 impl Database {
     pub fn new(db_path: PathBuf) -> Result<Self> {
         let conn = Connection::open(db_path)?;
+        // Garantir que chaves estrangeiras estejam ativas
+        let _ = conn.execute("PRAGMA foreign_keys = ON;", []);
         Ok(Database { conn })
     }
 
@@ -50,6 +52,8 @@ impl Database {
                 numeros_sorteados TEXT NOT NULL,
                 data_sorteio DATE,
                 acumulado BOOLEAN,
+                valor_premio REAL,
+                ganhadores INTEGER,
                 data_verificacao DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
@@ -57,10 +61,16 @@ impl Database {
                 aposta_id INTEGER,
                 concurso INTEGER,
                 acertos INTEGER,
-                FOREIGN KEY (aposta_id) REFERENCES apostas(id),
-                FOREIGN KEY (concurso) REFERENCES resultados(concurso)
+                PRIMARY KEY (aposta_id, concurso),
+                FOREIGN KEY (aposta_id) REFERENCES apostas(id) ON DELETE CASCADE,
+                FOREIGN KEY (concurso) REFERENCES resultados(concurso) ON DELETE CASCADE
             );",
         )?;
+
+        // Migrações manuais para colunas novas se a tabela já existir (ignora erro se já existirem)
+        let _ = self.conn.execute("ALTER TABLE resultados ADD COLUMN valor_premio REAL", []);
+        let _ = self.conn.execute("ALTER TABLE resultados ADD COLUMN ganhadores INTEGER", []);
+
         Ok(())
     }
 
@@ -88,7 +98,8 @@ impl Database {
         let aposta = stmt.query_row(params![id], |row| {
             let id: i64 = row.get(0)?;
             let numeros_str: String = row.get(1)?;
-            let numeros: Vec<i32> = serde_json::from_str(&numeros_str).map_err(|e| rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e)))?;
+            let numeros: Vec<i32> = serde_json::from_str(&numeros_str)
+                .map_err(|e| rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e)))?;
 
             // Buscar resultados/acertos
             let acertos = self.obter_acertos_aposta(id).unwrap_or_default();
@@ -112,6 +123,8 @@ impl Database {
                 resultados_concursos,
             })
         })?;
+
+        println!("Aposta adicionada com ID: {}", aposta.id);
 
         Ok(aposta)
     }
@@ -156,27 +169,30 @@ impl Database {
             .collect::<Result<Vec<_>>>()?;
 
         Ok(apostas)
-    }
-
-    pub fn excluir_aposta(&self, id: i64) -> Result<()> {
-        self.conn.execute(
-            "UPDATE apostas SET ativa = 0 WHERE id = ?1",
-            params![id],
-        )?;
+    }    pub fn excluir_aposta(&self, id: i64) -> Result<()> {
+        // Limpar acertos e aposta
+        self.conn.execute("DELETE FROM apostas_resultados WHERE aposta_id = ?1", params![id])?;
+        self.conn.execute("DELETE FROM apostas WHERE id = ?1", params![id])?;
         Ok(())
     }
 
+
+
     pub fn salvar_resultado(&self, resultado: &crate::models::Resultado) -> Result<()> {
-        let numeros_json = serde_json::to_string(&resultado.numeros_sorteados).unwrap();
+        let numeros_json = serde_json::to_string(&resultado.numeros_sorteados)
+            .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
         
+        println!("Salvando resultado concurso: {}", resultado.concurso);
         self.conn.execute(
-            "INSERT OR REPLACE INTO resultados (concurso, numeros_sorteados, data_sorteio, acumulado)
-             VALUES (?1, ?2, ?3, ?4)",
+            "INSERT OR REPLACE INTO resultados (concurso, numeros_sorteados, data_sorteio, acumulado, valor_premio, ganhadores)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
                 resultado.concurso,
                 numeros_json,
                 resultado.data_sorteio,
-                resultado.acumulado
+                resultado.acumulado,
+                resultado.valor_premio,
+                resultado.ganhadores
             ],
         )?;
         Ok(())
@@ -184,20 +200,23 @@ impl Database {
 
     pub fn obter_resultado(&self, concurso: i32) -> Result<Option<crate::models::Resultado>> {
         let mut stmt = self.conn.prepare(
-            "SELECT concurso, numeros_sorteados, data_sorteio, acumulado
+            "SELECT concurso, numeros_sorteados, data_sorteio, acumulado, valor_premio, ganhadores
              FROM resultados
              WHERE concurso = ?1"
         )?;
 
         let resultado = stmt.query_row(params![concurso], |row| {
             let numeros_str: String = row.get(1)?;
-            let numeros_sorteados: Vec<i32> = serde_json::from_str(&numeros_str).unwrap();
+            let numeros_sorteados: Vec<i32> = serde_json::from_str(&numeros_str)
+                .map_err(|e| rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e)))?;
 
             Ok(crate::models::Resultado {
                 concurso: row.get(0)?,
                 numeros_sorteados,
                 data_sorteio: row.get(2)?,
                 acumulado: row.get(3)?,
+                valor_premio: row.get(4)?,
+                ganhadores: row.get(5)?,
             })
         });
 

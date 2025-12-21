@@ -28,18 +28,18 @@ export async function adicionarAposta(
 ): Promise<Aposta> {
   return await invoke('adicionar_aposta', {
     numeros,
-    concurso_inicial: concursoInicial,
-    quantidade_concursos: quantidadeConcursos,
+    concursoInicial,
+    quantidadeConcursos,
   });
 }
 
 export async function listarApostas(): Promise<Aposta[]> {
   return await invoke('listar_apostas');
 }
-
 export async function excluirAposta(id: number): Promise<void> {
-  await invoke('excluir_aposta', { id });
+  return await invoke('excluir_aposta', { id });
 }
+
 
 
 export async function verificarResultados(concurso: number): Promise<Resultado> {
@@ -51,7 +51,7 @@ export async function carregarUltimosResultados(
   quantidade: number = 15
 ): Promise<Resultado[]> {
   return await invoke('carregar_ultimos_resultados', {
-    concurso_final: concursoFinal,
+    concursoFinal,
     quantidade,
   });
 }

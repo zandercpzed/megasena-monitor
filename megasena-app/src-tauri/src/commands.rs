@@ -29,6 +29,7 @@ pub fn adicionar_aposta(
     concurso_inicial: i32,
     quantidade_concursos: i32,
 ) -> Result<Aposta, String> {
+    println!("Comando adicionar_aposta: concurso={}, qtd={}", concurso_inicial, quantidade_concursos);
     let db = db.lock().map_err(|e| e.to_string())?;
     
     // Validações
@@ -50,15 +51,27 @@ pub fn adicionar_aposta(
 
 #[tauri::command]
 pub fn listar_apostas(db: State<'_, Mutex<Database>>) -> Result<Vec<Aposta>, String> {
+    println!("Comando listar_apostas recebido");
     let db = db.lock().map_err(|e| e.to_string())?;
     db.listar_apostas().map_err(|e| e.to_string())
+}#[tauri::command]
+pub fn excluir_aposta(db: State<'_, Mutex<Database>>, id: i64) -> Result<(), String> {
+    println!(">>> Comando excluir_aposta SOLICITADO para ID: {}", id);
+    let db = db.lock().map_err(|e| e.to_string())?;
+    match db.excluir_aposta(id) {
+        Ok(_) => {
+            println!(">>> Aposta {} EXCLUÍDA com sucesso do banco.", id);
+            Ok(())
+        },
+        Err(e) => {
+            let err_msg = format!("ERRO NO BANCO ao excluir aposta {}: {}", id, e);
+            eprintln!("{}", err_msg);
+            Err(err_msg)
+        }
+    }
 }
 
-#[tauri::command]
-pub fn excluir_aposta(db: State<'_, Mutex<Database>>, id: i64) -> Result<(), String> {
-    let db = db.lock().map_err(|e| e.to_string())?;
-    db.excluir_aposta(id).map_err(|e| e.to_string())
-}
+
 
 
 #[tauri::command]
@@ -66,6 +79,7 @@ pub fn verificar_resultados(
     db: State<'_, Mutex<Database>>,
     concurso: i32,
 ) -> Result<Resultado, String> {
+    println!("Comando verificar_resultados: concurso={}", concurso);
     // Buscar resultado da API
     let resultado = api::verificar_resultado(concurso)?;
     
