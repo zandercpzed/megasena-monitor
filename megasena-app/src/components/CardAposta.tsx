@@ -115,7 +115,9 @@ export function CardAposta({ aposta, onExcluida }: CardApostaProps) {
                         </span>
                       </div>
                     ) : (
-                      <span className="text-[9px] text-muted-foreground/50 italic font-bold uppercase tracking-widest">Aguardando...</span>
+                      <span className="text-[9px] text-muted-foreground/60 font-black uppercase tracking-widest px-2 py-1 bg-muted rounded-lg border border-border/50">
+                        Aguardando Sorteio
+                      </span>
                     )}
                   </div>
                   
