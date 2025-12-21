@@ -27,6 +27,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [verificando, setVerificando] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsView, setSettingsView] = useState<'settings' | 'about' | 'help'>('settings');
 
   const carregarApostas = async () => {
     setLoading(true);
@@ -135,15 +136,22 @@ function App() {
     inicializar(true);
 
     // Listen for window-show event from System Tray
-    const unlisten = listen('window-show', () => {
+    const unlistenShow = listen('window-show', () => {
       console.log('Evento window-show recebido. Atualizando dados...');
       toast.loading('Atualizando resultados...', { id: 'refresh', duration: 2000 });
-      // Quando abre pelo tray, NÃO mostra o splash
       inicializar(false);
     });
 
+    // Listen for open-view from native menu
+    const unlistenView = listen('open-view', (event: { payload: string }) => {
+      console.log('Evento open-view recebido:', event.payload);
+      setSettingsView(event.payload as any);
+      setShowSettings(true);
+    });
+
     return () => {
-      unlisten.then(f => f());
+      unlistenShow.then(f => f());
+      unlistenView.then(f => f());
     };
   }, []);
 
@@ -246,7 +254,13 @@ function App() {
       )}
 
       {showSettings && (
-        <SettingsModal onClose={() => setShowSettings(false)} />
+        <SettingsModal 
+          initialView={settingsView}
+          onClose={() => {
+            setShowSettings(false);
+            setSettingsView('settings'); // Reset for next time gear is clicked
+          }} 
+        />
       )}
     </div>
   );

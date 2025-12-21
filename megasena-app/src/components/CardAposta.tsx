@@ -108,16 +108,18 @@ export function CardAposta({ aposta, onExcluida }: CardApostaProps) {
                         </span>
                       )}
                     </div>
-                    {acertos !== undefined ? (
+                    {sorteados && acertos !== undefined ? (
                       <div className="text-right">
                         <span className={`text-[10px] font-black uppercase tracking-widest ${isWinner ? 'text-yellow-600' : 'text-muted-foreground'}`}>
                           {acertos} ACERTO{acertos !== 1 ? 'S' : ''}
                         </span>
                       </div>
                     ) : (
-                      <span className="text-[9px] text-muted-foreground/60 font-black uppercase tracking-widest px-2 py-1 bg-muted rounded-lg border border-border/50">
-                        Aguardando Sorteio
-                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-[9px] text-muted-foreground/60 font-black uppercase tracking-widest px-2 py-1 bg-muted rounded-lg border border-border/50">
+                          Aguardando Sorteio
+                        </span>
+                      </div>
                     )}
                   </div>
                   
