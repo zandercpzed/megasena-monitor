@@ -4,14 +4,15 @@ import appIcon from '../assets/app-icon.png';
 
 interface SettingsModalProps {
   onClose: () => void;
+  initialView?: ModalView;
 }
 
 type ModalView = 'settings' | 'about' | 'help';
 
-export function SettingsModal({ onClose }: SettingsModalProps) {
+export function SettingsModal({ onClose, initialView = 'settings' }: SettingsModalProps) {
   const [theme, setTheme] = useState<Theme>(SettingsService.getTheme());
   const [autostart, setAutostart] = useState(false);
-  const [view, setView] = useState<ModalView>('settings');
+  const [view, setView] = useState<ModalView>(initialView);
 
   useEffect(() => {
     SettingsService.isAutostartEnabled().then(setAutostart);
