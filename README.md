@@ -115,4 +115,4 @@ Contribuições são muito bem-vindas! Se você tem uma ideia de recurso, corre�
 
 ---
 
-_Desenvolvido com 🍀 por [Zander Cattapreta](https://github.com/zandercpzed)_
+_Desenvolvido com 🍀 por [Zander Catta Preta](https://github.com/zandercpzed)_
