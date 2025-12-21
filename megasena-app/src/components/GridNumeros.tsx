@@ -38,7 +38,7 @@ export function GridNumeros({ selecionados, onChange, maxSelecao = 15 }: GridNum
   };
 
   return (
-    <div className="grid grid-cols-10 gap-2 p-4">
+    <div className="grid grid-cols-10 gap-2 p-4 bg-muted/20 rounded-2xl border border-border/50">
       {numeros.map(num => (
         <NumeroEsfera
           key={num}

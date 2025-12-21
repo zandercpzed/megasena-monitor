@@ -34,18 +34,17 @@ export function CardAposta({ aposta, onExcluida }: CardApostaProps) {
     : `Concurso ${aposta.concursoInicial}`;
 
   return (
-    <div className={`glass-card rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md border border-gray-100 ${expandido ? 'ring-1 ring-green-sphere/20' : ''}`}>
+    <div className={`glass-card rounded-3xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md border border-border bg-card ${expandido ? 'ring-2 ring-green-sphere/20' : ''}`}>
       {/* Header - Sempre visível */}
-      <div className="flex items-start justify-between p-4 pb-0">
+      <div className="flex items-start justify-between p-5 pb-2">
         <div 
-          className="flex items-center gap-2 cursor-pointer flex-1"
+          className="flex items-center gap-3 cursor-pointer flex-1"
           onClick={() => setExpandido(!expandido)}
         >
-          <span className="text-xl text-gray-400">{expandido ? '▼' : '▶'}</span>
-          <div>
-            <span className="font-bold text-gray-800">Aposta #{aposta.id}</span>
-            <span className="text-gray-500 mx-2">•</span>
-            <span className="text-sm text-gray-600">{concursosRestantes}</span>
+          <span className="text-sm font-bold text-muted-foreground transition-transform duration-300" style={{ transform: expandido ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+          <div className="space-y-0.5">
+            <span className="font-black text-xs text-foreground uppercase tracking-widest block">Aposta #{aposta.id}</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">{concursosRestantes}</span>
           </div>
         </div>
         
@@ -55,15 +54,16 @@ export function CardAposta({ aposta, onExcluida }: CardApostaProps) {
             handleExcluir();
           }}
           disabled={excluindo}
-          className="px-3 py-1 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-md text-xs font-bold transition-all border border-red-100 hover:border-red-500 disabled:opacity-50"
+          className="p-2.5 bg-destructive/10 text-destructive hover:bg-destructive hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-destructive/20 hover:border-destructive disabled:opacity-50"
+          title="Remover Aposta"
         >
-          {excluindo ? '...' : 'Remover Aposta'}
+          {excluindo ? '...' : 'Remover'}
         </button>
       </div>
 
-      {/* Números - Sempre visível - AJUSTE DE ALINHAMENTO (5px direita, 3px cima) */}
+      {/* Números - Sempre visível */}
       <div 
-        className="flex flex-wrap gap-2 px-4 ml-[5px] -mt-[3px] pb-4 cursor-pointer"
+        className="flex flex-wrap gap-2 px-5 pb-5 cursor-pointer"
         onClick={() => setExpandido(!expandido)}
       >
         {aposta.numeros.map(num => (
@@ -73,18 +73,16 @@ export function CardAposta({ aposta, onExcluida }: CardApostaProps) {
 
       {/* Detalhes Expandidos */}
       {expandido && (
-        <div className="mx-4 pb-4 pt-4 border-t border-gray-100 space-y-4">
-          <div className="text-sm text-gray-600 flex justify-between items-end">
-            <div>
-              <p><strong>Criado em:</strong> {new Date(aposta.dataCriacao).toLocaleString('pt-BR')}</p>
-              {aposta.quantidadeConcursos > 1 && (
-                <p><strong>Teimosinha:</strong> {aposta.quantidadeConcursos} concursos</p>
-              )}
-            </div>
+        <div className="mx-5 pb-5 pt-5 border-t border-border space-y-5 animate-in slide-in-from-top-2 duration-300">
+          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest flex justify-between items-center opacity-70">
+            <span>Data de Cadastro: {new Date(aposta.dataCriacao).toLocaleDateString('pt-BR')}</span>
+            {aposta.quantidadeConcursos > 1 && (
+              <span>Teimosinha: {aposta.quantidadeConcursos} Concursos</span>
+            )}
           </div>
 
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">Histórico de Conferência</h4>
+          <div className="space-y-4">
+            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Histórico de Resultados</h4>
             {Array.from({ length: aposta.quantidadeConcursos }, (_, i) => aposta.concursoInicial + i).map(concurso => {
               const acertos = aposta.acertos?.[concurso];
               const sorteados = aposta.resultadosConcursos?.[concurso];
@@ -95,34 +93,34 @@ export function CardAposta({ aposta, onExcluida }: CardApostaProps) {
               return (
                 <div 
                   key={concurso} 
-                  className={`rounded-xl p-4 transition-all duration-500 border ${
+                  className={`rounded-2xl p-4 transition-all duration-500 border ${
                     isWinner 
-                      ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200 shadow-sm' 
-                      : 'bg-gray-50/30 border-gray-100'
+                      ? 'bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200 shadow-sm' 
+                      : 'bg-muted/50 border-border'
                   }`}
                 >
-                  <div className="flex justify-between items-center mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-gray-700">Concurso {concurso}</span>
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-black text-foreground uppercase tracking-widest">C#{concurso}</span>
                       {prizeType && (
-                        <span className="px-2 py-0.5 bg-yellow-400 text-white text-[10px] font-black rounded-full shadow-sm animate-pulse">
+                        <span className="px-3 py-1 bg-yellow-400 text-white text-[9px] font-black rounded-full shadow-sm animate-bounce">
                           {prizeType}
                         </span>
                       )}
                     </div>
                     {acertos !== undefined ? (
                       <div className="text-right">
-                        <span className={`text-sm font-black ${isWinner ? 'text-yellow-600' : 'text-gray-400'}`}>
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${isWinner ? 'text-yellow-600' : 'text-muted-foreground'}`}>
                           {acertos} ACERTO{acertos !== 1 ? 'S' : ''}
                         </span>
                       </div>
                     ) : (
-                      <span className="text-[10px] text-gray-300 italic font-medium">Aguardando sorteio...</span>
+                      <span className="text-[9px] text-muted-foreground/50 italic font-bold uppercase tracking-widest">Aguardando...</span>
                     )}
                   </div>
                   
                   {sorteados && (
-                    <div className="flex flex-wrap gap-1.5 opacity-90">
+                    <div className="flex flex-wrap gap-2">
                       {sorteados.map(num => (
                         <NumeroEsfera 
                           key={num} 

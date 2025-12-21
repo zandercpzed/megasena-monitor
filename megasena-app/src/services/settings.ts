@@ -1,4 +1,4 @@
-import { enable, disable, isEnabled } from 'tauri-plugin-autostart-api';
+import { enable, disable, isEnabled } from '@tauri-apps/plugin-autostart';
 
 export type Theme = 'light' | 'dark' | 'system';
 
@@ -14,14 +14,34 @@ export const SettingsService = {
 
   applyTheme(theme: Theme) {
     const root = window.document.documentElement;
-    const isDark = 
-      theme === 'dark' || 
-      (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
-    if (isDark) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
+    const update = (isDark: boolean) => {
+      if (isDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    };
+
+    const isDarkInitial = 
+      theme === 'dark' || 
+      (theme === 'system' && mediaQuery.matches);
+    
+    update(isDarkInitial);
+
+    // Remover listener anterior se houver (para evitar duplicatas)
+    // @ts-ignore
+    if (window._themeListener) {
+      // @ts-ignore
+      mediaQuery.removeEventListener('change', window._themeListener);
+    }
+
+    if (theme === 'system') {
+      const listener = (e: MediaQueryListEvent) => update(e.matches);
+      mediaQuery.addEventListener('change', listener);
+      // @ts-ignore
+      window._themeListener = listener;
     }
   },
 

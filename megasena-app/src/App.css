@@ -22,16 +22,51 @@
   --color-green-sphere: #00A859;
   --color-green-dark: #006B3C;
   --color-green-light: #E8F5E9;
+  
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
 }
 
 :root {
+  --background: #ffffff;
+  --foreground: oklch(0.145 0 0);
+  --card: #ffffff;
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #030213;
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0.0058 264.53);
+  --secondary-foreground: #030213;
+  --muted: #ececf0;
+  --muted-foreground: #717182;
+  --accent: #e9ebef;
+  --accent-foreground: #030213;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --input: transparent;
+  --input-background: #f3f3f5;
+  --radius: 1.5rem;
+
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
   line-height: 1.5;
   font-weight: 400;
 
-  color: #1a1a1a;
-  background-color: #f8f9fa;
+  color: var(--foreground);
+  background-color: var(--background);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -40,8 +75,25 @@
 }
 
 .dark {
-  color: #f1f1f1;
-  background-color: #0f172a;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  
+  color: var(--foreground);
+  background-color: var(--background);
 }
 
 /* Scrollbar minimalista */
@@ -54,11 +106,11 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f8f9fa;
+  background: var(--background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
+  background: var(--muted);
   border-radius: 4px;
 }
 
@@ -81,9 +133,9 @@
 
 /* Glassmorphism for cards */
 .glass-card {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--card);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(229, 231, 235, 0.5);
+  border: 1px solid var(--border);
 }
 
 .fade-in {
