@@ -186,17 +186,16 @@ pub fn obter_ultimo_concurso_numero() -> Result<i32, String> {
 
     // 3. EXPLORAÇÃO DE FRONTEIRA: Tenta descobrir se o próximo ou o seguinte já existem
     // Isso é crucial para dias como hoje (Mega da Virada), onde o sistema principal demora a atualizar a âncora.
-    println!("Exploração de Fronteira: Âncora detectada em {}. Verificando se {} ou {} existem...", anchor, anchor + 1, anchor + 2);
-    
-    // Tenta Anchor + 1
-    if let Ok(_) = verificar_resultado(anchor + 1) {
+
+    // 3. EXPLORAÇÃO DE FRONTEIRA
+    // Tenta descobrir concursos à frente da âncora oficial
+    if let Ok(res) = verificar_resultado(anchor + 1) {
         println!("DESCOBERTA: Concurso {} detectado antecipadamente!", anchor + 1);
-        anchor += 1;
+        anchor = res.concurso;
         
-        // Tenta Anchor + 2 (muito raro, mas possível se houver pulo de dados)
-        if let Ok(_) = verificar_resultado(anchor + 1) {
-            println!("DESCOBERTA EXTRAORDINÁRIA: Concurso {} detectado antecipadamente!", anchor + 1);
-            anchor += 1;
+        if let Ok(res2) = verificar_resultado(anchor + 1) {
+            println!("DESCOBERTA EXTRAORDINÁRIA: Concurso {} detectado!", res2.concurso);
+            anchor = res2.concurso;
         }
     }
 

@@ -28,6 +28,7 @@ function App() {
   const [verificando, setVerificando] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsView, setSettingsView] = useState<'settings' | 'about' | 'help'>('settings');
+  const isSyncing = useRef(false);
 
   const carregarApostas = async () => {
     setLoading(true);
@@ -110,6 +111,12 @@ function App() {
     SettingsService.applyTheme(SettingsService.getTheme());
 
     const syncResultados = async (showSplash: boolean = false) => {
+      if (isSyncing.current) {
+        console.log('Sincronização já em andamento, ignorando...');
+        return;
+      }
+      
+      isSyncing.current = true;
       console.log('--- Iniciando Sincronização de Resultados ---');
       try {
         const ultimoConcurso = await obterUltimoConcurso();
@@ -136,6 +143,8 @@ function App() {
         console.log('--- Sincronização Concluída ---');
       } catch (error) {
         console.error('Falha na sincronização:', error);
+      } finally {
+        isSyncing.current = false;
       }
     };
 
