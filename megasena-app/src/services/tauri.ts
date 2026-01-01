@@ -16,10 +16,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { invoke } from '@tauri-apps/api/core';
+import * as tauriCore from '@tauri-apps/api/core';
 import { Aposta, Resultado } from '../types';
 
-// Wrapper para comunicação com o backend Tauri (Rust)
+// Wrapper Robusto para comunicação com o backend Tauri (Rust)
+const invoke = async (...args: any[]): Promise<any> => {
+  try {
+    // Tenta importação via módulo
+    if (tauriCore && typeof tauriCore.invoke === 'function') {
+      // @ts-ignore
+      return await tauriCore.invoke(...args);
+    }
+    
+    // Tenta via global (fallback para alguns cenários de dev)
+    // @ts-ignore
+    if (window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function') {
+      // @ts-ignore
+      return await window.__TAURI__.core.invoke(...args);
+    }
+
+    console.error('Tauri invoke não encontrado no módulo nem no global.');
+    throw new Error('Tauri bridge not available');
+  } catch (e) {
+    console.error('Erro na chamada invoke:', e);
+    throw e;
+  }
+};
 
 export async function adicionarAposta(
   numeros: number[],

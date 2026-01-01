@@ -3,10 +3,9 @@
  * Copyright (C) 2025 Zander Cattapreta
  *
  * This program is licensed under the MIT License.
- * See the LICENSE file in the project root for more information.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import { FormCadastro } from './components/FormCadastro';
 import { ListaApostas } from './components/ListaApostas';
@@ -16,7 +15,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { listen } from '@tauri-apps/api/event';
 import { SettingsService } from './services/settings';
 import appIcon from './assets/app-icon.png';
-import { listarApostas, verificarResultados, carregarUltimosResultados, obterUltimoConcurso } from './services/tauri';
+import * as tauri from './services/tauri';
 import { Aposta, Resultado } from './types';
 import './App.css';
 
@@ -28,21 +27,25 @@ function App() {
   const [verificando, setVerificando] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsView, setSettingsView] = useState<'settings' | 'about' | 'help'>('settings');
+  const [initError, setInitError] = useState<string | null>(null);
+  
   const isSyncing = useRef(false);
 
   const carregarApostas = async () => {
+    console.log('[App] Carregando apostas...');
     setLoading(true);
     try {
-      const data = await listarApostas();
-      setApostas(data);
+      const data = await tauri.listarApostas();
+      console.log('[App] Apostas carregadas:', data.length);
+      setApostas(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Erro ao carregar apostas:', error);
+      console.error('[App] Erro ao carregar apostas:', error);
       setApostas([]);
+      // Não bloquear a UI completamente por isso
     } finally {
       setLoading(false);
     }
   };
-
 
   const handleVerificarResultados = async () => {
     if (apostas.length === 0) {
@@ -51,9 +54,6 @@ function App() {
     }
 
     setVerificando(true);
-    let verificadas = 0;
-    let erros = 0;
-
     try {
       const concursosUnicos = Array.from(new Set<number>(
         apostas.flatMap(aposta => 
@@ -65,123 +65,107 @@ function App() {
 
       toast.loading(`Conferindo ${concursosUnicos.length} concurso(s)...`, { id: 'verificando' });
 
-      // Processar em paralelo com um limite de concorrência ou todos de uma vez se for razoável
       const results = await Promise.allSettled(
-        concursosUnicos.map(concurso => verificarResultados(concurso))
+        concursosUnicos.map(concurso => tauri.verificarResultados(concurso))
       );
 
-      results.forEach((res, index) => {
-        if (res.status === 'fulfilled') {
-          verificadas++;
-        } else {
-          console.error(`Erro ao verificar concurso ${concursosUnicos[index]}:`, res.reason);
-          erros++;
-        }
-      });
+      let verificadas = results.filter(r => r.status === 'fulfilled').length;
+      let erros = results.length - verificadas;
 
       toast.dismiss('verificando');
-
-      if (verificadas > 0) {
-        toast.success(`${verificadas} concurso(s) conferido(s)!`, {
-          duration: 4000,
-          icon: '🎉',
-        });
-      }
-      
-      if (erros > 0) {
-        toast.error(`${erros} concurso(s) não puderam ser acessados agora.`, { duration: 5000 });
-      }
+      if (verificadas > 0) toast.success(`${verificadas} concurso(s) conferido(s)!`, { icon: '🎉' });
+      if (erros > 0) toast.error(`${erros} concurso(s) indisponíveis.`);
 
       await carregarApostas();
-      
-      if (verificadas === 0 && erros === 0) {
-        toast.error('Nenhum resultado novo encontrado.');
-      }
     } catch (error) {
-      console.error('Erro ao verificar resultados:', error);
-      toast.error('Ocorreu um erro na conferência.');
-      await carregarApostas();
+      console.error('[App] Erro na conferência:', error);
+      toast.error('Erro na conferência.');
     } finally {
       setVerificando(false);
     }
   };
 
   useEffect(() => {
-    // Aplicar tema salvo ao carregar
-    SettingsService.applyTheme(SettingsService.getTheme());
+    console.log('[App] Componente Montado');
+    
+    // Aplicar tema
+    try {
+      SettingsService.applyTheme(SettingsService.getTheme());
+    } catch (e) {
+      console.error('[App] Erro ao aplicar tema:', e);
+    }
 
     const syncResultados = async (showSplash: boolean = false) => {
-      if (isSyncing.current) {
-        console.log('Sincronização já em andamento, ignorando...');
-        return;
-      }
-      
+      if (isSyncing.current) return;
       isSyncing.current = true;
-      console.log('--- Iniciando Sincronização de Resultados ---');
+      
+      console.log('[App] Sincronização Iniciada');
       try {
-        const ultimoConcurso = await obterUltimoConcurso();
-        // Regra: Sempre carregar os 36 últimos
-        const resultados = await carregarUltimosResultados(ultimoConcurso, 36);
+        const ultimo = await tauri.obterUltimoConcurso();
+        console.log('[App] Último concurso detectado:', ultimo);
         
-        setUltimosResultados(resultados.slice(0, 5));
+        const resultados = await tauri.carregarUltimosResultados(ultimo, 36);
+        console.log('[App] Resultados sincronizados:', resultados.length);
         
-        if (resultados.length > 0) {
-          if (showSplash) {
-            setLastResultado(resultados[0]);
-          }
+        if (Array.isArray(resultados) && resultados.length > 0) {
+          setUltimosResultados(resultados.slice(0, 5));
+          if (showSplash) setLastResultado(resultados[0]);
           
-          // Verificar se o último concurso esperado (âncora) foi capturado
-          if (resultados[0].concurso < ultimoConcurso) {
-            toast.error(`Atenção: O resultado do concurso ${ultimoConcurso} ainda não foi processado oficialmete.`, {
-              duration: 6000,
-              icon: '⌛'
-            });
+          if (resultados[0].concurso < ultimo) {
+            toast.error(`Concurso ${ultimo} ainda não processado oficialmente.`, { icon: '⌛' });
           }
         }
-
-        await carregarApostas();
-        console.log('--- Sincronização Concluída ---');
-      } catch (error) {
-        console.error('Falha na sincronização:', error);
+      } catch (error: any) {
+        console.error('[App] Erro na sincronização:', error);
+        if (error.toString().includes('bridge not available')) {
+          setInitError('Erro de Conexão: O Tauri Bridge não está disponível.');
+        }
       } finally {
+        await carregarApostas();
         isSyncing.current = false;
+        console.log('[App] Sincronização Finalizada');
       }
     };
 
-    // Sincronização inicial no Boot
     syncResultados(true);
 
-    // Sensor de Mudança de Data (Calendário)
+    // Listeners
     let lastDate = new Date().toLocaleDateString();
-    
-    const dateCheckInterval = setInterval(() => {
-      const currentDate = new Date().toLocaleDateString();
-      if (currentDate !== lastDate) {
-        console.log(`Mudança de data detectada: ${lastDate} -> ${currentDate}. Sincronizando...`);
-        lastDate = currentDate;
+    const interval = setInterval(() => {
+      const current = new Date().toLocaleDateString();
+      if (current !== lastDate) {
+        lastDate = current;
         syncResultados(false);
       }
-    }, 60000); // Verifica a cada minuto
+    }, 60000);
 
-    // Listen for window-show event from System Tray
-    const unlistenShow = listen('window-show', () => {
-      console.log('Evento window-show recebido. Atualizando dados...');
-      syncResultados(false);
-    });
-
-    // Listen for open-view from native menu
+    const unlistenShow = listen('window-show', () => syncResultados(false));
     const unlistenView = listen('open-view', (event: { payload: string }) => {
-      console.log('Evento open-view recebido:', event.payload);
       setSettingsView(event.payload as any);
       setShowSettings(true);
     });
 
     return () => {
-      clearInterval(dateCheckInterval);
+      clearInterval(interval);
       unlistenShow.then(f => f());
       unlistenView.then(f => f());
     };
   }, []);
+
+  if (initError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-background">
+        <h1 className="text-xl font-black text-red-500 mb-4">Falha na Inicialização</h1>
+        <p className="text-sm text-muted-foreground mb-6">{initError}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-6 py-2 bg-primary text-white rounded-xl text-xs font-bold uppercase tracking-widest"
+        >
+          Recarregar Aplicativo
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-500">
@@ -219,15 +203,12 @@ function App() {
       </header>
 
       <div className="max-w-2xl mx-auto py-8 px-4">
-        {/* Seção Cadastro */}
         <section className="mb-8">
           <FormCadastro onApostaAdicionada={carregarApostas} />
         </section>
 
-        {/* Separador */}
         <div className="border-t border-border my-8"></div>
 
-        {/* Dash de Resultados Recentes */}
         {ultimosResultados.length > 0 && (
           <section className="mb-10 overflow-hidden">
             <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 ml-1 flex items-center gap-2">
@@ -252,7 +233,6 @@ function App() {
           </section>
         )}
 
-        {/* Seção Apostas */}
         <section>
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xs font-black text-muted-foreground uppercase tracking-[0.3em]">
@@ -286,7 +266,7 @@ function App() {
           initialView={settingsView}
           onClose={() => {
             setShowSettings(false);
-            setSettingsView('settings'); // Reset for next time gear is clicked
+            setSettingsView('settings');
           }} 
         />
       )}
