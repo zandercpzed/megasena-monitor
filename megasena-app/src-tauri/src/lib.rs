@@ -1,9 +1,9 @@
 // Lib.rs - Main library file for Tauri app
 
-mod api;
-mod commands;
-mod database;
-mod models;
+pub mod api;
+pub mod commands;
+pub mod database;
+pub mod models;
 
 use database::Database;
 use std::sync::Mutex;

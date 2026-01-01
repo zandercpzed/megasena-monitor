@@ -45,7 +45,7 @@ export function FormCadastro({ onApostaAdicionada }: FormCadastroProps) {
     carregarUltimo();
   }, []);
 
-  const isValido = selecionados.length >= 6 && selecionados.length <= 15 && concurso !== '';
+  const isValido = selecionados.length >= 6 && selecionados.length <= 20 && concurso !== '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +105,7 @@ export function FormCadastro({ onApostaAdicionada }: FormCadastroProps) {
         
         <div className="flex flex-wrap gap-2 p-4 bg-muted rounded-2xl min-h-[56px] transition-all">
           {selecionados.length === 0 ? (
-            <span className="text-muted-foreground/50 text-xs font-medium italic mt-1">Selecione de 6 a 15 números no grid abaixo</span>
+            <span className="text-muted-foreground/50 text-xs font-medium italic mt-1">Selecione de 6 a 20 números no grid abaixo</span>
           ) : (
             selecionados.map(num => (
               <NumeroEsfera key={num} numero={num} selecionado tamanho="small" />

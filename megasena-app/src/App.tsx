@@ -109,37 +109,55 @@ function App() {
     // Aplicar tema salvo ao carregar
     SettingsService.applyTheme(SettingsService.getTheme());
 
-    const inicializar = async (showSplash: boolean = false) => {
-      // 1. Carregar lista de apostas local
-      await carregarApostas();
-      
-      // 2. Carregar últimos 15 concursos e exibir modal do último
+    const syncResultados = async (showSplash: boolean = false) => {
+      console.log('--- Iniciando Sincronização de Resultados ---');
       try {
         const ultimoConcurso = await obterUltimoConcurso();
-        console.log(`Inicializando: último concurso #${ultimoConcurso}. Carregando últimos 15...`);
+        // Regra: Sempre carregar os 36 últimos
+        const resultados = await carregarUltimosResultados(ultimoConcurso, 36);
         
-        const resultados = await carregarUltimosResultados(ultimoConcurso, 15);
-        setUltimosResultados(resultados.slice(0, 5)); // Dashboard mostra os 5 mais recentes
+        setUltimosResultados(resultados.slice(0, 5));
         
-        if (resultados.length > 0 && showSplash) {
-          setLastResultado(resultados[0]);
+        if (resultados.length > 0) {
+          if (showSplash) {
+            setLastResultado(resultados[0]);
+          }
+          
+          // Verificar se o último concurso esperado (âncora) foi capturado
+          if (resultados[0].concurso < ultimoConcurso) {
+            toast.error(`Atenção: O resultado do concurso ${ultimoConcurso} ainda não foi processado oficialmete.`, {
+              duration: 6000,
+              icon: '⌛'
+            });
+          }
         }
 
-        // 3. Recarregar apostas para refletir se houve acertos nos 15 carregados
         await carregarApostas();
+        console.log('--- Sincronização Concluída ---');
       } catch (error) {
-        console.warn('Falha na inicialização dinâmica:', error);
+        console.error('Falha na sincronização:', error);
       }
     };
 
-    // Primeira inicialização da sessão
-    inicializar(true);
+    // Sincronização inicial no Boot
+    syncResultados(true);
+
+    // Sensor de Mudança de Data (Calendário)
+    let lastDate = new Date().toLocaleDateString();
+    
+    const dateCheckInterval = setInterval(() => {
+      const currentDate = new Date().toLocaleDateString();
+      if (currentDate !== lastDate) {
+        console.log(`Mudança de data detectada: ${lastDate} -> ${currentDate}. Sincronizando...`);
+        lastDate = currentDate;
+        syncResultados(false);
+      }
+    }, 60000); // Verifica a cada minuto
 
     // Listen for window-show event from System Tray
     const unlistenShow = listen('window-show', () => {
       console.log('Evento window-show recebido. Atualizando dados...');
-      toast.loading('Atualizando resultados...', { id: 'refresh', duration: 2000 });
-      inicializar(false);
+      syncResultados(false);
     });
 
     // Listen for open-view from native menu
@@ -150,6 +168,7 @@ function App() {
     });
 
     return () => {
+      clearInterval(dateCheckInterval);
       unlistenShow.then(f => f());
       unlistenView.then(f => f());
     };

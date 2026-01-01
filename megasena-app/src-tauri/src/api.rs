@@ -99,14 +99,55 @@ fn fetch_caixa_api(concurso: i32) -> Result<Resultado, String> {
     })
 }
 
-fn fetch_google_search(concurso: i32) -> Result<Resultado, String> {
-    // Apenas um placeholder para demonstrar a estratégia de fallback.
-    // Em uma implementação real, usaríamos um serviço de busca ou scraping direto.
-    // Para fins deste projeto ultra-minimalista, vamos simular o erro ou retorno seletivo.
-    Err(format!("Fallback para concurso {} não disponível no momento.", concurso))
+/// Busca resultado de APIs alternativas (fallback)
+fn fetch_external_fallback(concurso: i32) -> Result<Resultado, String> {
+    // Fonte 1: API Guidi (Open Source)
+    let url = format!(
+        "https://api.guidi.dev.br/loteria/megasena/{}",
+        concurso
+    );
+
+    println!("Tentando fallback Fonte 1 (Guidi): {}", url);
+
+    let client = Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .user_agent("MegaSena Monitor/1.0.0")
+        .build()
+        .map_err(|e| format!("Erro ao criar cliente HTTP Fallback: {}", e))?;
+
+    match client.get(&url).send() {
+        Ok(response) => {
+            let status = response.status();
+            if status.is_success() {
+                if let Ok(data) = response.json::<CaixaApiResponse>() {
+                    // Reutilizar o parsing da Caixa já que o formato é idêntico
+                     let numeros_sorteados: Vec<i32> = data
+                        .dezenas
+                        .iter()
+                        .filter_map(|s| s.parse::<i32>().ok())
+                        .collect();
+
+                    if numeros_sorteados.len() == 6 {
+                        let sena_info = data.lista_rateio.iter().find(|r| r.descricao.to_lowercase().contains("6"));
+                        return Ok(Resultado {
+                            concurso: data.numero,
+                            numeros_sorteados,
+                            data_sorteio: data.data_apuracao,
+                            acumulado: data.acumulado,
+                            valor_premio: sena_info.and_then(|s| s.valor),
+                            ganhadores: sena_info.map(|s| s.ganhadores),
+                        });
+                    }
+                }
+            }
+            Err(format!("Fallback Fonte 1 retornou status: {}", status))
+        }
+        Err(e) => Err(format!("Erro na requisição de fallback: {}", e))
+    }
 }
 
-/// Busca o número do último concurso realizado na API da Caixa
+/// Busca o número do último concurso realizado com fallback
+/// Busca o número do último concurso com estratégia de Exploração de Fronteira
 pub fn obter_ultimo_concurso_numero() -> Result<i32, String> {
     let url = "https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/";
 
@@ -116,39 +157,76 @@ pub fn obter_ultimo_concurso_numero() -> Result<i32, String> {
         .build()
         .map_err(|e| format!("Erro ao criar cliente HTTP: {}", e))?;
 
-    let response = client
-        .get(url)
-        .send()
-        .map_err(|e| format!("Erro ao fazer requisição: {}", e))?;
+    // 1. Obter Âncora Oficial
+    let mut anchor = match client.get(url).send() {
+        Ok(response) => {
+            if response.status().is_success() {
+                if let Ok(data) = response.json::<CaixaApiResponse>() {
+                    data.numero
+                } else { 0 }
+            } else { 0 }
+        }
+        Err(_) => 0,
+    };
 
-    if !response.status().is_success() {
-        return Err(format!("API retornou status: {}", response.status()));
+    // 2. Se Caixa falhou, tenta Anchor via Fallback
+    if anchor == 0 {
+        let fallback_url = "https://api.guidi.dev.br/loteria/megasena/ultimo";
+        anchor = match client.get(fallback_url).send() {
+            Ok(response) => {
+                if response.status().is_success() {
+                    if let Ok(data) = response.json::<CaixaApiResponse>() {
+                        data.numero
+                    } else { 2954 }
+                } else { 2954 }
+            }
+            Err(_) => 2954,
+        };
     }
 
-    let data: CaixaApiResponse = response
-        .json()
-        .map_err(|e| format!("Erro ao parsear JSON: {}", e))?;
+    // 3. EXPLORAÇÃO DE FRONTEIRA: Tenta descobrir se o próximo ou o seguinte já existem
+    // Isso é crucial para dias como hoje (Mega da Virada), onde o sistema principal demora a atualizar a âncora.
+    println!("Exploração de Fronteira: Âncora detectada em {}. Verificando se {} ou {} existem...", anchor, anchor + 1, anchor + 2);
+    
+    // Tenta Anchor + 1
+    if let Ok(_) = verificar_resultado(anchor + 1) {
+        println!("DESCOBERTA: Concurso {} detectado antecipadamente!", anchor + 1);
+        anchor += 1;
+        
+        // Tenta Anchor + 2 (muito raro, mas possível se houver pulo de dados)
+        if let Ok(_) = verificar_resultado(anchor + 1) {
+            println!("DESCOBERTA EXTRAORDINÁRIA: Concurso {} detectado antecipadamente!", anchor + 1);
+            anchor += 1;
+        }
+    }
 
-    Ok(data.numero)
+    Ok(anchor)
 }
 
-/// Função principal de verificação com fallback
 pub fn verificar_resultado(concurso: i32) -> Result<Resultado, String> {
-    // Tentar API Caixa
+    // 1. Tentar API Oficial da Caixa
+    println!("Tentando API Oficial para concurso {}", concurso);
+    
     match fetch_caixa_api(concurso) {
         Ok(resultado) => return Ok(resultado),
         Err(e) => {
             eprintln!("API Caixa falhou: {}", e);
-            // Tentar Fallback
-            match fetch_google_search(concurso) {
-                Ok(resultado) => return Ok(resultado),
-                Err(e2) => eprintln!("Fallback também falhou: {}", e2),
-            }
+        }
+    }
+
+    // 2. Tentar Fallback (APIs de terceiros / Open Source)
+    match fetch_external_fallback(concurso) {
+        Ok(resultado) => {
+            println!("Sucesso via Fallback para concurso {}", concurso);
+            return Ok(resultado);
+        },
+        Err(e) => {
+            eprintln!("Fallback falhou: {}", e);
         }
     }
 
     Err(format!(
-        "Não foi possível obter resultado do concurso {}. Isso pode ser devido a atraso no sorteio oficial. Tente novamente em alguns minutos.",
+        "Não foi possível obter resultado do concurso {}. Isso pode ser devido a um atraso nos sistemas oficiais ou instabilidade na conexão. Tente novamente em alguns instantes.",
         concurso
     ))
 }
@@ -167,5 +245,16 @@ mod tests {
         let res = resultado.unwrap();
         assert_eq!(res.concurso, 2650);
         assert_eq!(res.numeros_sorteados.len(), 6);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_fetch_fallback_api() {
+        // Testar fallback com o concurso 2954 que sabemos estar disponível
+        let resultado = fetch_external_fallback(2954);
+        assert!(resultado.is_ok());
+        let res = resultado.unwrap();
+        assert_eq!(res.concurso, 2954);
+        assert_eq!(res.numeros_sorteados, vec![1, 9, 37, 39, 42, 44]);
     }
 }

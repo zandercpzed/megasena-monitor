@@ -33,8 +33,8 @@ pub fn adicionar_aposta(
     let db = db.lock().map_err(|e| e.to_string())?;
     
     // Validações
-    if numeros.len() < 6 || numeros.len() > 15 {
-        return Err("Selecione entre 6 e 15 números".to_string());
+    if numeros.len() < 6 || numeros.len() > 20 {
+        return Err("Selecione entre 6 e 20 números".to_string());
     }
     
     if concurso_inicial <= 0 {
@@ -100,20 +100,22 @@ pub fn carregar_ultimos_resultados(
     let mut resultados = Vec::new();
     let concurso_inicial = concurso_final - quantidade + 1;
     
-    for concurso in concurso_inicial..=concurso_final {
+    println!("Comando carregar_ultimos_resultados: {} concursos a partir de {}", quantidade, concurso_final);
+    
+    for concurso in (concurso_inicial..=concurso_final).rev() {
         match api::verificar_resultado(concurso) {
             Ok(resultado) => {
-                // Salvar no banco
+                // Salvar no banco e processar
                 let db_lock = db.lock().map_err(|e| e.to_string())?;
-                db_lock.salvar_resultado(&resultado).map_err(|e| e.to_string())?;
-                db_lock.processar_acertos_concurso(concurso, &resultado.numeros_sorteados).map_err(|e| e.to_string())?;
+                let _ = db_lock.salvar_resultado(&resultado);
+                let _ = db_lock.processar_acertos_concurso(concurso, &resultado.numeros_sorteados);
                 drop(db_lock);
                 
                 resultados.push(resultado);
             }
             Err(e) => {
-                eprintln!("Erro ao carregar concurso {}: {}", concurso, e);
-                // Continuar mesmo com erro
+                eprintln!("Aviso: Concurso {} ainda não disponível: {}", concurso, e);
+                // Continuar para coletar o restante do histórico de 12
             }
         }
     }

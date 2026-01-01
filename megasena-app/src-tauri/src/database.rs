@@ -309,6 +309,8 @@ mod tests {
             numeros_sorteados: sorteio_2650.clone(),
             data_sorteio: "2023-11-01".to_string(),
             acumulado: false,
+            valor_premio: Some(500000.0),
+            ganhadores: Some(1),
         };
         db.salvar_resultado(&res_2650).unwrap();
         db.processar_acertos_concurso(2650, &sorteio_2650).unwrap();
