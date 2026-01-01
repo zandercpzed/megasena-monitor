@@ -42,6 +42,10 @@ struct CaixaApiResponse {
     acumulado: bool,
     #[serde(rename = "listaRateioPremio")]
     lista_rateio: Vec<Rateio>,
+    #[serde(rename = "valorEstimadoProximoConcurso")]
+    valor_estimado_proximo: Option<f64>,
+    #[serde(rename = "valorAcumuladoProximoConcurso")]
+    valor_acumulado_proximo: Option<f64>,
 }
 
 /// Busca resultado da API oficial da Caixa
@@ -89,6 +93,18 @@ fn fetch_caixa_api(concurso: i32) -> Result<Resultado, String> {
     let ganhadores = sena_info.map(|s| s.ganhadores);
     let valor_premio = sena_info.and_then(|s| s.valor);
 
+    // Calcular Valor Total
+    let valor_total = if let (Some(g), Some(v)) = (ganhadores, valor_premio) {
+        if g > 0 {
+            Some(g as f64 * v)
+        } else {
+            // Se acumulou, o "Prêmio" é o valor acumulado para o próximo ou o estimado
+            data.valor_acumulado_proximo.or(data.valor_estimado_proximo)
+        }
+    } else {
+        data.valor_estimado_proximo
+    };
+
     Ok(Resultado {
         concurso: data.numero,
         numeros_sorteados,
@@ -96,6 +112,7 @@ fn fetch_caixa_api(concurso: i32) -> Result<Resultado, String> {
         acumulado: data.acumulado,
         valor_premio,
         ganhadores,
+        valor_total,
     })
 }
 
@@ -129,13 +146,24 @@ fn fetch_external_fallback(concurso: i32) -> Result<Resultado, String> {
 
                     if numeros_sorteados.len() == 6 {
                         let sena_info = data.lista_rateio.iter().find(|r| r.descricao.to_lowercase().contains("6"));
+                        let ganhadores = sena_info.map(|s| s.ganhadores);
+                        let valor_premio = sena_info.and_then(|s| s.valor);
+
+                        let valor_total = if let (Some(g), Some(v)) = (ganhadores, valor_premio) {
+                            if g > 0 { Some(g as f64 * v) }
+                            else { data.valor_acumulado_proximo.or(data.valor_estimado_proximo) }
+                        } else {
+                            data.valor_estimado_proximo
+                        };
+
                         return Ok(Resultado {
                             concurso: data.numero,
                             numeros_sorteados,
                             data_sorteio: data.data_apuracao,
                             acumulado: data.acumulado,
-                            valor_premio: sena_info.and_then(|s| s.valor),
-                            ganhadores: sena_info.map(|s| s.ganhadores),
+                            valor_premio,
+                            ganhadores,
+                            valor_total,
                         });
                     }
                 }

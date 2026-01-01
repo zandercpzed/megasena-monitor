@@ -39,10 +39,22 @@ export function ModalResultado({ resultado, onClose }: ModalResultadoProps) {
               )}
             </div>
             
-            {resultado.valorPremio && (
+            {resultado.valorTotal && (
               <div>
-                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Valor Estimado</div>
-                <div className="text-2xl font-bold text-foreground">{formatCurreny(resultado.valorPremio)}</div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                  {resultado.ganhadores !== undefined ? (
+                    resultado.ganhadores > 0 ? 'Valor do Prêmio' : 'Valor Acumulado'
+                  ) : 'Prêmio Estimado'}
+                </div>
+                <div className="text-2xl font-bold text-foreground">{formatCurreny(resultado.valorTotal)}</div>
+                
+                {resultado.ganhadores !== undefined && (
+                  <div className="text-xs font-bold text-muted-foreground mt-2 uppercase tracking-wide">
+                    {resultado.ganhadores === 0 
+                      ? "Nenhum ganhador na Sena" 
+                      : `${resultado.ganhadores} ${resultado.ganhadores === 1 ? 'ganhador' : 'ganhadores'} na Sena`}
+                  </div>
+                )}
               </div>
             )}
 

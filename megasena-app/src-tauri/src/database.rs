@@ -54,6 +54,7 @@ impl Database {
                 acumulado BOOLEAN,
                 valor_premio REAL,
                 ganhadores INTEGER,
+                valor_total REAL,
                 data_verificacao DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
@@ -70,6 +71,7 @@ impl Database {
         // Migrações manuais para colunas novas se a tabela já existir (ignora erro se já existirem)
         let _ = self.conn.execute("ALTER TABLE resultados ADD COLUMN valor_premio REAL", []);
         let _ = self.conn.execute("ALTER TABLE resultados ADD COLUMN ganhadores INTEGER", []);
+        let _ = self.conn.execute("ALTER TABLE resultados ADD COLUMN valor_total REAL", []);
 
         Ok(())
     }
@@ -184,15 +186,16 @@ impl Database {
         
         println!("Salvando resultado concurso: {}", resultado.concurso);
         self.conn.execute(
-            "INSERT OR REPLACE INTO resultados (concurso, numeros_sorteados, data_sorteio, acumulado, valor_premio, ganhadores)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT OR REPLACE INTO resultados (concurso, numeros_sorteados, data_sorteio, acumulado, valor_premio, ganhadores, valor_total)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![
                 resultado.concurso,
                 numeros_json,
                 resultado.data_sorteio,
                 resultado.acumulado,
                 resultado.valor_premio,
-                resultado.ganhadores
+                resultado.ganhadores,
+                resultado.valor_total
             ],
         )?;
         Ok(())
@@ -200,7 +203,7 @@ impl Database {
 
     pub fn obter_resultado(&self, concurso: i32) -> Result<Option<crate::models::Resultado>> {
         let mut stmt = self.conn.prepare(
-            "SELECT concurso, numeros_sorteados, data_sorteio, acumulado, valor_premio, ganhadores
+            "SELECT concurso, numeros_sorteados, data_sorteio, acumulado, valor_premio, ganhadores, valor_total
              FROM resultados
              WHERE concurso = ?1"
         )?;
@@ -217,6 +220,7 @@ impl Database {
                 acumulado: row.get(3)?,
                 valor_premio: row.get(4)?,
                 ganhadores: row.get(5)?,
+                valor_total: row.get(6)?,
             })
         });
 

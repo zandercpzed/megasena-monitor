@@ -36,6 +36,7 @@ export interface Resultado {
   acumulado: boolean;
   valorPremio?: number;
   ganhadores?: number;
+  valorTotal?: number;
 }
 
 export interface ApostaResultado {

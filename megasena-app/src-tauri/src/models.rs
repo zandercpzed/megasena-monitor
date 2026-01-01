@@ -42,6 +42,7 @@ pub struct Resultado {
     pub acumulado: bool,
     pub valor_premio: Option<f64>,
     pub ganhadores: Option<i32>,
+    pub valor_total: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
