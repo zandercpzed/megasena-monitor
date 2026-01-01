@@ -34,7 +34,7 @@ pub fn run() {
             let m_about = MenuItem::with_id(app, "about", "Sobre o MegaSena Monitor", true, None::<&str>)?;
             let m_settings = MenuItem::with_id(app, "settings", "Preferências...", true, None::<&str>)?;
             let m_help = MenuItem::with_id(app, "help", "Ajuda", true, None::<&str>)?;
-            let m_quit = MenuItem::with_id(app, "quit", "Encerrar", true, None::<&str>)?;
+            let m_quit = MenuItem::with_id(app, "quit", "Encerrar", true, Some("CmdOrCtrl+Q"))?;
             
             let menu = Menu::with_items(app, &[&m_about, &m_settings, &m_help, &m_quit])?;
             app.set_menu(menu)?;
