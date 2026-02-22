@@ -29,3 +29,10 @@ dist-ssr
 # Personal
 .backup/
 instalaveis/
+
+# Z•Edições Backup Folders
+_bkp*
+_BKP*
+_ bkp*
+_ BKP*
+
